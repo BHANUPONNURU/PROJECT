@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 
 export default function TeacherDashboard({ onLogout, onPublishAssignment, onUpdateAssignment, onDeleteAssignment, submissions = [], onGradeSubmission, assignments = [], user }) {
+  const teacherSubject = user?.subject?.trim() || 'General'
   const [activeMenu, setActiveMenu] = useState('dashboard')
   const [query, setQuery] = useState('')
   const [selectedFile, setSelectedFile] = useState('')
@@ -12,18 +13,22 @@ export default function TeacherDashboard({ onLogout, onPublishAssignment, onUpda
   const [feedbackInput, setFeedbackInput] = useState('')
   const [form, setForm] = useState({
     title: '',
-    subject: '',
+    subject: teacherSubject,
     dueDate: '',
     points: '100'
   })
   const displayName = user?.userId || user?.fullName || 'Teacher'
-  const displaySub = user?.email || user?.userId || 'Teacher Portal'
+  const displaySub = teacherSubject || user?.email || user?.userId || 'Teacher Portal'
   const avatarText = displayName
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() || '')
     .join('') || 'TR'
+
+  useEffect(() => {
+    setForm((prev) => ({ ...prev, subject: teacherSubject }))
+  }, [teacherSubject])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -76,15 +81,23 @@ export default function TeacherDashboard({ onLogout, onPublishAssignment, onUpda
 
   const handlePublish = (event) => {
     event.preventDefault()
-    const assignmentTitle = form.title || 'Untitled'
-    onPublishAssignment?.({
-      title: form.title.trim(),
+    const assignmentTitle = form.title.trim()
+    if (!assignmentTitle || !form.dueDate) {
+      window.alert('Title and due date are required.')
+      return
+    }
+    const published = onPublishAssignment?.({
+      title: assignmentTitle,
       dueDate: form.dueDate,
-      subject: form.subject.trim(),
+      subject: teacherSubject,
       points: form.points
     })
+    if (!published) {
+      window.alert('Unable to publish assignment. Please try again.')
+      return
+    }
     setPublishNotice(`Assignment "${assignmentTitle}" published successfully.`)
-    setForm({ title: '', subject: '', dueDate: '', points: '100' })
+    setForm({ title: '', subject: teacherSubject, dueDate: '', points: '100' })
     setSelectedFile('')
   }
 
@@ -111,7 +124,7 @@ export default function TeacherDashboard({ onLogout, onPublishAssignment, onUpda
     const nextAssignment = {
       ...editingAssignment,
       title: editingAssignment.title?.trim(),
-      subject: editingAssignment.subject?.trim() || 'General',
+      subject: teacherSubject,
       dueDate: editingAssignment.dueDate,
       points: editingAssignment.points || '100'
     }
@@ -277,9 +290,9 @@ export default function TeacherDashboard({ onLogout, onPublishAssignment, onUpda
                   style={styles.input}
                   type="text"
                   name="subject"
-                  value={form.subject}
-                  onChange={handleFormChange}
-                  placeholder="Enter subject name"
+                  value={teacherSubject}
+                  readOnly
+                  title="Subject is mapped to your teacher account"
                   required
                 />
               </div>
@@ -487,8 +500,9 @@ export default function TeacherDashboard({ onLogout, onPublishAssignment, onUpda
                   style={styles.input}
                   type="text"
                   name="subject"
-                  value={editingAssignment.subject || ''}
-                  onChange={handleEditAssignmentChange}
+                  value={teacherSubject}
+                  readOnly
+                  title="Subject is mapped to your teacher account"
                   required
                 />
                 <label style={styles.label}>Due Date</label>

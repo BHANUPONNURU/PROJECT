@@ -10,6 +10,7 @@ export default function Login({ onLogin }) {
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
+  const [teacherSubject, setTeacherSubject] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [authMessage, setAuthMessage] = useState({ type: '', text: '' })
   const [logoFailed, setLogoFailed] = useState(false)
@@ -69,7 +70,8 @@ export default function Login({ onLogin }) {
       password: pass,
       role: selectedRole,
       fullName: account.fullName || userId,
-      email: account.email || ''
+      email: account.email || '',
+      subject: account.subject || ''
     })
   }
 
@@ -77,9 +79,14 @@ export default function Login({ onLogin }) {
     event.preventDefault()
     setAuthMessage({ type: '', text: '' })
     const userId = username.trim()
+    const isTeacher = selectedRole === 'teacher'
 
-    if (!fullName.trim() || !email.trim() || !userId || !password) {
+    if (!userId || !password || (!isTeacher && (!fullName.trim() || !email.trim()))) {
       window.alert('Please fill all fields.')
+      return
+    }
+    if (isTeacher && !teacherSubject.trim()) {
+      window.alert('Please enter your subject/course.')
       return
     }
 
@@ -101,16 +108,21 @@ export default function Login({ onLogin }) {
         userId,
         password,
         role: selectedRole,
-        fullName: fullName.trim(),
-        email: email.trim()
+        fullName: isTeacher ? userId : fullName.trim(),
+        email: isTeacher ? '' : email.trim(),
+        subject: isTeacher ? teacherSubject.trim() : ''
       }
     ]
     saveAccounts(nextAccounts)
 
-    setAuthMessage({ type: 'success', text: `Account created for ${fullName}. Please login.` })
+    setAuthMessage({
+      type: 'success',
+      text: `Account created for ${isTeacher ? userId : fullName.trim()}. Please login.`
+    })
     setIsRegistering(false)
     setFullName('')
     setEmail('')
+    setTeacherSubject('')
     setUsername('')
     setPassword('')
     setConfirmPassword('')
@@ -241,25 +253,43 @@ export default function Login({ onLogin }) {
                 </button>
               </div>
 
-              <label style={styles.label}>Full Name</label>
-              <input
-                style={styles.input}
-                type="text"
-                placeholder="Enter your full name"
-                value={fullName}
-                onChange={(event) => setFullName(event.target.value)}
-                required
-              />
+              {selectedRole !== 'teacher' ? (
+                <>
+                  <label style={styles.label}>Full Name</label>
+                  <input
+                    style={styles.input}
+                    type="text"
+                    placeholder="Enter your full name"
+                    value={fullName}
+                    onChange={(event) => setFullName(event.target.value)}
+                    required
+                  />
 
-              <label style={styles.label}>Email</label>
-              <input
-                style={styles.input}
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-              />
+                  <label style={styles.label}>Email</label>
+                  <input
+                    style={styles.input}
+                    type="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    required
+                  />
+                </>
+              ) : null}
+
+              {selectedRole === 'teacher' ? (
+                <>
+                  <label style={styles.label}>Subject / Course</label>
+                  <input
+                    style={styles.input}
+                    type="text"
+                    placeholder="Enter your subject (e.g. Fullstack)"
+                    value={teacherSubject}
+                    onChange={(event) => setTeacherSubject(event.target.value)}
+                    required
+                  />
+                </>
+              ) : null}
 
               <label style={styles.label}>{loginLabel}</label>
               <input
